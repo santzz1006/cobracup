@@ -220,8 +220,16 @@ async function handleLogin(e) {
         alert("O Supabase não está configurado. Insira sua URL e KEY no script.js!");
         return;
     }
-    const email = document.getElementById('login-email').value;
+    const username = document.getElementById('login-email').value.trim();
     const pass = document.getElementById('login-password').value;
+    
+    if (!username || !pass) {
+        alert("Preencha o usuário e a senha.");
+        return;
+    }
+    
+    // Converte o usuário para um e-mail fake nos bastidores para o Supabase Auth
+    const email = username.toLowerCase().replace(/\s+/g, '') + "@cobracup.com";
     
     const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: email,
@@ -250,13 +258,16 @@ window.handleSignUp = async function() {
         alert("O Supabase não está configurado. Insira sua URL e KEY no script.js!");
         return;
     }
-    const email = document.getElementById('login-email').value;
+    const username = document.getElementById('login-email').value.trim();
     const pass = document.getElementById('login-password').value;
     
-    if (!email || !pass) {
-        alert("Preencha o e-mail e a senha nos campos acima para se cadastrar.");
+    if (!username || !pass) {
+        alert("Preencha o usuário e a senha nos campos acima para se cadastrar.");
         return;
     }
+    
+    // Converte o usuário para um e-mail fake nos bastidores
+    const email = username.toLowerCase().replace(/\s+/g, '') + "@cobracup.com";
     
     const { data, error } = await supabaseClient.auth.signUp({
         email: email,
