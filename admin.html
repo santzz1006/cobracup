@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cobra Cup - Painel Admin Visual</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            500: '#10b981', 
+                            600: '#059669',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .match-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            text-align: left;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .match-input::placeholder {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .score-input {
+            width: 24px;
+            text-align: center;
+            background: #f1f5f9;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            outline: none;
+            font-weight: 800;
+        }
+        .score-input:focus {
+            border-color: #cbd5e1;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans h-screen flex flex-col">
+
+    <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-slate-900 text-white rounded-lg flex items-center justify-center shadow-md">
+                <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-900">Admin do Chaveamento</h1>
+                <p class="text-xs text-slate-500 font-medium">Edite os nomes e placares livremente</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="initializeBracket()" id="btn-init" class="hidden bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold py-2 px-4 rounded-lg shadow-sm transition-all items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> Criar 15 Partidas Vazias
+            </button>
+            <button onclick="saveAllMatches()" id="btn-save" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i> Salvar Todas as Alterações
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 overflow-auto p-4 md:p-8 bg-slate-100 relative">
+        <div id="bracket-container" class="flex justify-between w-full max-w-[1200px] min-w-[900px] mx-auto min-h-[500px]">
+            <!-- Bracket will be injected here -->
+            <div class="w-full h-full flex items-center justify-center text-slate-500 font-medium">
+                <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i data-lucide="check-circle" class="text-green-400 w-5 h-5"></i>
+        <span id="toast-message" class="font-medium text-sm">Salvo com sucesso!</span>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const SUPABASE_URL = 'https://uodjtrnbaykkbandcwju.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvZGp0cm5iYXlra2JhbmRjd2p1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyOTYxNDksImV4cCI6MjEwMDg3MjE0OX0.Ajq_iyVaRVgjuz_QvM7RhKQId3bs6DmiXm-QfBmSwys';
+        
+        // Usamos a chave pública e aproveitamos a sessão já logada do index.html
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let matchesData = [];
+
+        async function loadMatches() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                const container = document.getElementById('bracket-container');
+                container.innerHTML = `<div class="w-full flex flex-col items-center justify-center text-red-500 font-bold p-8 bg-white rounded-xl shadow-sm border border-red-200">
+                    <i data-lucide="lock" class="w-8 h-8 mb-3"></i>
+                    <p class="text-center">Você precisa estar logado para acessar o painel de admin.</p>
+                    <p class="text-center text-sm font-medium mt-2">Por favor, faça login no site principal e recarregue esta página.</p>
+                </div>`;
+                lucide.createIcons();
+                return;
+            }
+            const { data: matches, error } = await supabaseClient
+                .from('matches')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                alert("Erro ao carregar: " + error.message);
+                return;
+            }
+
+            matchesData = matches || [];
+            renderVisualBracket();
+        }
+
+        function renderVisualBracket() {
+            const container = document.getElementById('bracket-container');
+            const btnInit = document.getElementById('btn-init');
+            
+            if (matchesData.length !== 15) {
+                container.innerHTML = `<div class="w-full flex flex-col items-center justify-center text-slate-500 font-medium p-8 bg-white rounded-xl shadow-sm border border-slate-200">
+                    <p class="mb-2 text-center text-lg text-slate-800 font-bold">Quase lá!</p>
+                    <p class="mb-4 text-center">Para o chaveamento visual funcionar, o banco precisa ter a estrutura de 15 partidas (Oitavas até a Final).</p>
+                    <p class="text-center mb-6">Você já tem <b>${matchesData.length}</b> partidas cadastradas. Clique no botão acima para adicionar automaticamente as <b>${15 - matchesData.length}</b> partidas em branco que faltam sem apagar as suas atuais.</p>
+                </div>`;
+                btnInit.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4"></i> Completar Chaveamento (+${15 - matchesData.length} vazias)`;
+                btnInit.classList.remove('hidden');
+                btnInit.classList.add('flex');
+                return;
+            }
+            
+            btnInit.classList.add('hidden');
+            btnInit.classList.remove('flex');
+
+            const generateInputHTML = (m) => `
+                <div class="match-box" data-id="${m.id}">
+                    <div class="match-player">
+                        <input type="text" class="match-input p1-name" value="${m.player1_name || ''}" placeholder="Vazio">
+                        <input type="number" class="score-input p1-score" value="${m.score_p1 !== null ? m.score_p1 : ''}" placeholder="-">
+                    </div>
+                    <div class="match-player">
+                        <input type="text" class="match-input p2-name" value="${m.player2_name || ''}" placeholder="Vazio">
+                        <input type="number" class="score-input p2-score" value="${m.score_p2 !== null ? m.score_p2 : ''}" placeholder="-">
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = `
+                <!-- Left Side: Oitavas -->
+                <div class="bracket-round relative">
+                    <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Oitavas</div>
+                    ${generateInputHTML(matchesData[0])}
+                    ${generateInputHTML(matchesData[1])}
+                    ${generateInputHTML(matchesData[2])}
+                    ${generateInputHTML(matchesData[3])}
+                </div>
+                
+                <!-- Left Side: Quartas -->
+                <div class="bracket-round relative">
+                    <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Quartas</div>
+                    ${generateInputHTML(matchesData[8])}
+                    ${generateInputHTML(matchesData[9])}
+                </div>
+                
+                <!-- Left Side: Semifinal -->
+                <div class="bracket-round relative">
+                    <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Semifinal</div>
+                    ${generateInputHTML(matchesData[12])}
+                </div>
+                
+                <!-- Center: FINAL -->
+                <div class="bracket-round items-center justify-center px-2 relative min-w-[180px]">
+                    <div class="flex flex-col items-center justify-center relative w-full gap-4">
+                        <span class="px-5 py-2 bg-amber-100 text-amber-700 font-black text-sm rounded-xl shadow-sm border border-amber-200 z-10 flex items-center gap-2">
+                            <i data-lucide="crown" class="w-4 h-4"></i> FINAL
+                        </span>
+                        ${generateInputHTML(matchesData[14])}
+                        
+                        <div class="flex flex-col items-center justify-center w-full mt-4 pointer-events-none">
+                            <img src="efootball-logo-1.png" alt="eFootball Logo" class="h-24 object-contain opacity-80" onerror="this.style.display='none'">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Side: Semifinal -->
+                <div class="bracket-round relative">
+                    <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Semifinal</div>
+                    ${generateInputHTML(matchesData[13])}
+                </div>
+                
+                <!-- Right Side: Quartas -->
+                <div class="bracket-round relative">
+                    <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Quartas</div>
+                    ${generateInputHTML(matchesData[10])}
+                    ${generateInputHTML(matchesData[11])}
+                </div>
+                
+                <!-- Right Side: Oitavas -->
+                <div class="bracket-round relative">
+                    <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Oitavas</div>
+                    ${generateInputHTML(matchesData[4])}
+                    ${generateInputHTML(matchesData[5])}
+                    ${generateInputHTML(matchesData[6])}
+                    ${generateInputHTML(matchesData[7])}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        async function initializeBracket() {
+            const btnInit = document.getElementById('btn-init');
+            btnInit.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Completando...';
+            lucide.createIcons();
+            
+            const missingCount = 15 - matchesData.length;
+            
+            if (missingCount > 0) {
+                const emptyMatches = Array.from({length: missingCount}).map(() => ({
+                    player1_name: '',
+                    player2_name: '',
+                    score_p1: null,
+                    score_p2: null
+                }));
+
+                const { error } = await supabaseClient.from('matches').insert(emptyMatches);
+                
+                if(error) {
+                    alert("Erro ao criar: " + error.message);
+                    btnInit.innerHTML = 'Tentar Novamente';
+                    return;
+                }
+            }
+            
+            await loadMatches();
+        }
+
+        async function saveAllMatches() {
+            const btn = document.getElementById('btn-save');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Salvando...';
+            lucide.createIcons();
+            btn.disabled = true;
+
+            const boxes = document.querySelectorAll('.match-box');
+            let updates = [];
+
+            boxes.forEach(box => {
+                const id = box.getAttribute('data-id');
+                const n1 = box.querySelector('.p1-name').value;
+                const n2 = box.querySelector('.p2-name').value;
+                const s1 = box.querySelector('.p1-score').value;
+                const s2 = box.querySelector('.p2-score').value;
+
+                updates.push({
+                    id: id,
+                    player1_name: n1,
+                    player2_name: n2,
+                    score_p1: s1 === '' ? null : parseInt(s1),
+                    score_p2: s2 === '' ? null : parseInt(s2)
+                });
+            });
+
+            // Upsert in Supabase (updates multiple rows at once if IDs match)
+            const { error } = await supabaseClient
+                .from('matches')
+                .upsert(updates);
+
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            lucide.createIcons();
+
+            if (error) {
+                alert("Erro ao salvar: " + error.message);
+            } else {
+                showToast();
+            }
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        loadMatches();
+    </script>
+</body>
+</html>
