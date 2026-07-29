@@ -2,3 +2,4 @@ supabase_keys.txt
 node_modules/
 .env
 .gemini/
+admin.html

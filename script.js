@@ -525,19 +525,19 @@ function renderBracket() {
     const container = document.getElementById('bracket-container');
     if(!container) return;
     
-    if (state.matches.length < 8) {
-        container.innerHTML = '<p class="text-center text-slate-500 w-full mt-4">Cadastre pelo menos 8 partidas (Fase Oitavas) no Supabase para visualizar o chaveamento.</p>';
+    if (state.matches.length < 15) {
+        container.innerHTML = '<p class="text-center text-slate-500 w-full mt-4">Chaveamento ainda não foi gerado. O admin precisa acessar o painel para inicializar as 15 partidas.</p>';
         return;
     }
     
-    // Dividimos metade para esquerda, metade para direita
-    const leftMatches = state.matches.slice(0, 4);
-    const rightMatches = state.matches.slice(4, 8);
-    
     const generateMatchHTML = (m, extraClass = '') => `
         <div class="match-box ${extraClass}">
-            <div class="match-player">${m ? m.player1_name : '?'} <span class="score">${m && m.score_p1 !== null ? m.score_p1 : '-'}</span></div>
-            <div class="match-player">${m ? m.player2_name : '?'} <span class="score">${m && m.score_p2 !== null ? m.score_p2 : '-'}</span></div>
+            <div class="match-player">${m && m.player1_name ? m.player1_name : '?'} <span class="score">${m && m.score_p1 !== null ? m.score_p1 : '-'}</span></div>
+            <div class="match-player">${m && m.player2_name ? m.player2_name : '?'} <span class="score">${m && m.score_p2 !== null ? m.score_p2 : '-'}</span></div>
+            
+            <div class="mt-5 text-center opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-0 left-0 right-0 bg-white p-2">
+                <button onclick="openBetModal('${m.id}')" class="text-sm text-brand-600 font-bold hover:underline w-full">Apostar</button>
+            </div>
         </div>
     `;
 
@@ -545,20 +545,23 @@ function renderBracket() {
         <!-- Left Side: Oitavas -->
         <div class="bracket-round relative">
             <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Oitavas</div>
-            ${leftMatches.map(m => generateMatchHTML(m)).join('')}
+            ${generateMatchHTML(state.matches[0])}
+            ${generateMatchHTML(state.matches[1])}
+            ${generateMatchHTML(state.matches[2])}
+            ${generateMatchHTML(state.matches[3])}
         </div>
         
         <!-- Left Side: Quartas -->
         <div class="bracket-round relative">
             <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Quartas</div>
-            ${generateMatchHTML()}
-            ${generateMatchHTML()}
+            ${generateMatchHTML(state.matches[8])}
+            ${generateMatchHTML(state.matches[9])}
         </div>
         
         <!-- Left Side: Semifinal -->
         <div class="bracket-round relative">
             <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Semifinal</div>
-            ${generateMatchHTML()}
+            ${generateMatchHTML(state.matches[12])}
         </div>
         
         <!-- Center: FINAL -->
@@ -568,18 +571,18 @@ function renderBracket() {
                     <i data-lucide="crown" class="w-4 h-4"></i> FINAL
                 </span>
                 
-                ${generateMatchHTML(null, 'border-amber-300 shadow-md')}
+                ${generateMatchHTML(state.matches[14], 'border-amber-300 shadow-md')}
                 
                 <!-- Logo eFootball -->
                 <div class="flex flex-col items-center justify-center w-full mt-4 pointer-events-none">
-                    <img src="efootball-logo-1.png" alt="eFootball Logo" class="h-24 object-contain opacity-80">
+                    <img src="efootball-logo-1.png" alt="eFootball Logo" class="h-24 object-contain opacity-80" onerror="this.style.display='none'">
                 </div>
             </div>
             
             <!-- Título Cobra Cup (Rodapé) -->
             <div class="absolute -bottom-20 flex items-center justify-center gap-3 w-[400px] pointer-events-none">
                 <h3 class="text-3xl font-black text-slate-800 tracking-wider flex items-center gap-3">
-                    COBRA CUP <img src="cobra-logo.png" alt="Cobra Cup Logo" class="h-10 object-contain">
+                    COBRA CUP <img src="cobra-logo.png" alt="Cobra Cup Logo" class="h-10 object-contain" onerror="this.style.display='none'">
                 </h3>
             </div>
         </div>
@@ -587,23 +590,26 @@ function renderBracket() {
         <!-- Right Side: Semifinal -->
         <div class="bracket-round relative">
             <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Semifinal</div>
-            ${generateMatchHTML()}
+            ${generateMatchHTML(state.matches[13])}
         </div>
         
         <!-- Right Side: Quartas -->
         <div class="bracket-round relative">
             <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Quartas</div>
-            ${generateMatchHTML()}
-            ${generateMatchHTML()}
+            ${generateMatchHTML(state.matches[10])}
+            ${generateMatchHTML(state.matches[11])}
         </div>
         
         <!-- Right Side: Oitavas -->
         <div class="bracket-round relative">
             <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Oitavas</div>
-            ${rightMatches.map(m => generateMatchHTML(m)).join('')}
+            ${generateMatchHTML(state.matches[4])}
+            ${generateMatchHTML(state.matches[5])}
+            ${generateMatchHTML(state.matches[6])}
+            ${generateMatchHTML(state.matches[7])}
         </div>
     `;
-    
+
     container.innerHTML = html;
     lucide.createIcons();
 }
