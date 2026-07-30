@@ -128,6 +128,11 @@ async function loadUserProfile(authUser) {
         if (profileName) profileName.innerText = profile.username;
         
         updateUIBalances();
+        
+        // Verifica status da missão diária
+        if (typeof checkDailyRewardStatus === 'function') {
+            checkDailyRewardStatus();
+        }
         updateUIAvatars();
     } else {
         // Se não tiver perfil, desloga por segurança ou força a criar
@@ -1076,6 +1081,81 @@ window.claimUpdateReward = async function() {
     closeUpdateModal();
 }
 
+// DAILY REWARD LOGIC
+window.claimDailyReward = async function() {
+    if (!state.user || !state.profile) return;
+    
+    const rewardKey = `daily_reward_time_${state.user.id}`;
+    const lastClaim = localStorage.getItem(rewardKey);
+    const now = Date.now();
+    
+    if (lastClaim && (now - parseInt(lastClaim)) < 86400000) {
+        showToast("Você já resgatou sua missão diária hoje! Volte em 24h.");
+        return;
+    }
+    
+    const btn = document.getElementById('btn-daily-reward');
+    if(btn) {
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Processando...';
+        btn.disabled = true;
+    }
+    
+    const newBalance = (state.profile.coin_balance || 0) + 30;
+    
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update({ coin_balance: newBalance })
+        .eq('id', state.user.id);
+        
+    if (error) {
+        showToast("Erro ao resgatar missão diária.");
+        if(btn) {
+            btn.innerHTML = '<i data-lucide="gift" class="w-4 h-4"></i> Resgatar 30 CPC';
+            btn.disabled = false;
+        }
+        lucide.createIcons();
+        return;
+    }
+    
+    state.profile.coin_balance = newBalance;
+    
+    const bal = newBalance.toLocaleString();
+    const topBal = document.getElementById('coin-balance');
+    const cardBal = document.getElementById('card-balance');
+    const profBal = document.getElementById('profile-balance');
+    if (topBal) topBal.innerText = bal;
+    if (cardBal) cardBal.innerText = bal;
+    if (profBal) profBal.innerText = bal;
+
+    localStorage.setItem(rewardKey, now.toString());
+    showToast("30 CPC resgatadas! Volte amanhã para mais.");
+    
+    checkDailyRewardStatus();
+}
+
+window.checkDailyRewardStatus = function() {
+    if (!state.user) return;
+    const rewardKey = `daily_reward_time_${state.user.id}`;
+    const lastClaim = localStorage.getItem(rewardKey);
+    const now = Date.now();
+    const btn = document.getElementById('btn-daily-reward');
+    
+    if (!btn) return;
+    
+    if (lastClaim && (now - parseInt(lastClaim)) < 86400000) {
+        btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Resgatado Hoje';
+        btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700', 'text-white');
+        btn.classList.add('bg-slate-200', 'text-slate-500', 'cursor-not-allowed');
+        btn.disabled = true;
+    } else {
+        btn.innerHTML = '<i data-lucide="gift" class="w-4 h-4"></i> Resgatar 30 CPC';
+        btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'text-white');
+        btn.classList.remove('bg-slate-200', 'text-slate-500', 'cursor-not-allowed');
+        btn.disabled = false;
+    }
+    lucide.createIcons();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initDock();
     setTimeout(() => {
@@ -1083,4 +1163,8 @@ document.addEventListener('DOMContentLoaded', () => {
             openUpdateModal();
         }
     }, 1500);
+    // Call it immediately if user is already loaded, though user might load later
+    // It will also be called on nav to profile if we wanted, but we can just let the click handler work.
+    // Better yet, just call it now and it'll silently exit if no user.
+    checkDailyRewardStatus();
 });
