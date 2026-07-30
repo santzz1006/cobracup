@@ -858,38 +858,78 @@ function renderProfileHistory() {
     if(list) list.classList.remove('hidden');
     
     list.innerHTML = state.bets.map(bet => {
-        let statusBadge = '<span class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-bold">Pendente</span>';
-        if (bet.status === 'won') statusBadge = '<span class="bg-brand-100 text-brand-700 text-xs px-2 py-1 rounded font-bold">Ganhou</span>';
-        if (bet.status === 'lost') statusBadge = '<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded font-bold">Perdeu</span>';
-
-        let desc = '';
-        if (bet.type === 'multiple' && bet.predictions) {
-            desc = bet.predictions.map(p => `• ${p.match_title}: ${p.market_name} - <b>${p.selection_name}</b>`).join('<br>');
-        } else if (bet.predictions && bet.predictions.length > 0) {
-            desc = `<b>${bet.predictions[0].selection_name}</b>`;
-        } else {
-            desc = `<b>${bet.predicted_winner}</b> (Antigo)`;
+        let statusBadge = '<span class="bg-amber-100 border border-amber-200 text-amber-700 text-[10px] px-2 py-1 rounded-full font-black uppercase tracking-wider">Pendente</span>';
+        let statusIcon = '<i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>';
+        if (bet.status === 'won') {
+            statusBadge = '<span class="bg-brand-100 border border-brand-200 text-brand-700 text-[10px] px-2 py-1 rounded-full font-black uppercase tracking-wider">Ganha</span>';
+            statusIcon = '<i data-lucide="check-circle-2" class="w-4 h-4 text-brand-500"></i>';
+        }
+        if (bet.status === 'lost') {
+            statusBadge = '<span class="bg-red-100 border border-red-200 text-red-700 text-[10px] px-2 py-1 rounded-full font-black uppercase tracking-wider">Perdida</span>';
+            statusIcon = '<i data-lucide="x-circle" class="w-4 h-4 text-red-500"></i>';
         }
 
-        const title = bet.type === 'multiple' ? 'Aposta Múltipla' : 'Aposta Simples';
+        const title = (bet.type === 'multiple' && bet.predictions) ? `${bet.predictions.length}-seleções` : 'Aposta Simples';
         const payout = bet.potential_payout ? bet.potential_payout : (bet.amount * 2);
 
-        return `
-            <div class="py-4 flex flex-col md:flex-row justify-between md:items-center gap-2">
-                <div>
-                    <div class="font-bold text-slate-800">${title}</div>
-                    <div class="text-sm text-slate-500 mt-1 leading-tight">${desc}</div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="text-right">
-                        <div class="text-sm font-semibold text-slate-600">${bet.amount} <img src="cup-coin.png" class="w-4 h-4 object-contain inline-block align-middle"></div>
-                        <div class="text-xs text-slate-400">Retorno: ${payout} <img src="cup-coin.png" class="w-3 h-3 object-contain inline-block align-middle mb-0.5"></div>
+        let legsHTML = '';
+        if (bet.predictions && bet.predictions.length > 0) {
+            legsHTML = bet.predictions.map(p => `
+                <div class="p-3 bg-white">
+                    <div class="flex justify-between items-start mb-1">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="target" class="w-4 h-4 text-brand-600"></i>
+                            <span class="font-bold text-slate-800 text-sm">${p.market_name}</span>
+                            ${statusIcon}
+                        </div>
+                        <span class="font-bold text-slate-700 text-sm">${p.odd ? p.odd.toFixed(2) : '-'}</span>
                     </div>
-                    <div>${statusBadge}</div>
+                    <div class="pl-6">
+                        <div class="font-bold text-slate-700 text-sm">${p.selection_name}</div>
+                        <div class="text-xs text-slate-400 mt-0.5">${p.match_title}</div>
+                    </div>
                 </div>
-            </div>
+            `).join('<div class="h-px bg-slate-100 mx-3"></div>');
+        } else {
+            legsHTML = `
+                <div class="p-3 bg-white">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
+                        <span class="font-bold text-slate-800 text-sm">Vencedor da Partida</span>
+                    </div>
+                    <div class="pl-6">
+                        <div class="font-bold text-slate-700 text-sm">${bet.predicted_winner}</div>
+                        <div class="text-xs text-slate-400 mt-0.5">Aposta Legada</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        return `
+            <details class="group bg-white border border-slate-200 rounded-xl mb-3 shadow-sm overflow-hidden" open>
+                <summary class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                    <div class="flex flex-col">
+                        <div class="font-black text-slate-800 text-sm mb-1 flex items-center gap-2">
+                            ${title}
+                            <span class="text-xs text-slate-500 font-medium">Valor: ${bet.amount} <img src="cup-coin.png" class="w-3 h-3 object-contain inline-block align-middle mb-0.5"></span>
+                        </div>
+                        <div class="text-xs text-slate-600 font-bold">
+                            Retorno Potencial: <span class="text-brand-600">${payout} <img src="cup-coin.png" class="w-3 h-3 object-contain inline-block align-middle mb-0.5"></span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        ${statusBadge}
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 group-open:-rotate-180 transition-transform duration-300"></i>
+                    </div>
+                </summary>
+                <div class="bg-slate-50 flex flex-col">
+                    ${legsHTML}
+                </div>
+            </details>
         `;
     }).join('');
+    
+    lucide.createIcons();
 }
 
 // UI Helpers
