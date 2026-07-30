@@ -115,7 +115,8 @@
             const { data: matches, error } = await supabaseClient
                 .from('matches')
                 .select('*')
-                .order('created_at', { ascending: true });
+                .order('created_at', { ascending: true })
+                .order('id', { ascending: true });
 
             if (error) {
                 alert("Erro ao carregar: " + error.message);
@@ -145,40 +146,61 @@
             btnInit.classList.add('hidden');
             btnInit.classList.remove('flex');
 
-            const generateInputHTML = (m) => `
-                <div class="match-box" data-id="${m.id}">
-                    <div class="match-player">
-                        <input type="text" class="match-input p1-name" value="${m.player1_name || ''}" placeholder="Vazio">
-                        <input type="number" class="score-input p1-score" value="${m.score_p1 !== null ? m.score_p1 : ''}" placeholder="-">
+            const nextNodeMap = {
+                0: { next: 8, slot: 1 }, 1: { next: 8, slot: 2 },
+                2: { next: 9, slot: 1 }, 3: { next: 9, slot: 2 },
+                4: { next: 10, slot: 1 }, 5: { next: 10, slot: 2 },
+                6: { next: 11, slot: 1 }, 7: { next: 11, slot: 2 },
+                8: { next: 12, slot: 1 }, 9: { next: 12, slot: 2 },
+                10: { next: 13, slot: 1 }, 11: { next: 13, slot: 2 },
+                12: { next: 14, slot: 1 }, 13: { next: 14, slot: 2 }
+            };
+
+            const generateInputHTML = (m, idx) => {
+                const btn1 = nextNodeMap[idx] ? `<button type="button" onclick="advancePlayer(${idx}, 1)" class="ml-2 text-brand-600 hover:text-brand-800 transition-colors" title="Avançar"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>` : '';
+                const btn2 = nextNodeMap[idx] ? `<button type="button" onclick="advancePlayer(${idx}, 2)" class="ml-2 text-brand-600 hover:text-brand-800 transition-colors" title="Avançar"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>` : '';
+
+                return `
+                    <div class="match-box relative" data-id="${m.id}" id="match-${idx}">
+                        <div class="match-player flex items-center justify-between">
+                            <input type="text" class="match-input p1-name flex-1" value="${m.player1_name || ''}" placeholder="Vazio">
+                            <div class="flex items-center shrink-0">
+                                <input type="number" class="score-input p1-score" value="${m.score_p1 !== null ? m.score_p1 : ''}" placeholder="-">
+                                ${btn1}
+                            </div>
+                        </div>
+                        <div class="match-player flex items-center justify-between">
+                            <input type="text" class="match-input p2-name flex-1" value="${m.player2_name || ''}" placeholder="Vazio">
+                            <div class="flex items-center shrink-0">
+                                <input type="number" class="score-input p2-score" value="${m.score_p2 !== null ? m.score_p2 : ''}" placeholder="-">
+                                ${btn2}
+                            </div>
+                        </div>
                     </div>
-                    <div class="match-player">
-                        <input type="text" class="match-input p2-name" value="${m.player2_name || ''}" placeholder="Vazio">
-                        <input type="number" class="score-input p2-score" value="${m.score_p2 !== null ? m.score_p2 : ''}" placeholder="-">
-                    </div>
-                </div>
-            `;
+                `;
+            };
 
             container.innerHTML = `
                 <!-- Left Side: Oitavas -->
                 <div class="bracket-round relative">
                     <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Oitavas</div>
-                    ${generateInputHTML(matchesData[0])}
-                    ${generateInputHTML(matchesData[1])}
-                    ${generateInputHTML(matchesData[2])}
-                    ${generateInputHTML(matchesData[3])}
+                    ${generateInputHTML(matchesData[0], 0)}
+                    ${generateInputHTML(matchesData[1], 1)}
+                    ${generateInputHTML(matchesData[2], 2)}
+                    ${generateInputHTML(matchesData[3], 3)}
                 </div>
                 
                 <!-- Left Side: Quartas -->
                 <div class="bracket-round relative">
                     <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Quartas</div>
-                    ${generateInputHTML(matchesData[8])}
-                    ${generateInputHTML(matchesData[9])}
+                    ${generateInputHTML(matchesData[8], 8)}
+                    ${generateInputHTML(matchesData[9], 9)}
                 </div>
                 
                 <!-- Left Side: Semifinal -->
                 <div class="bracket-round relative">
                     <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Semifinal</div>
-                    ${generateInputHTML(matchesData[12])}
+                    ${generateInputHTML(matchesData[12], 12)}
                 </div>
                 
                 <!-- Center: FINAL -->
@@ -187,7 +209,7 @@
                         <span class="px-5 py-2 bg-amber-100 text-amber-700 font-black text-sm rounded-xl shadow-sm border border-amber-200 z-10 flex items-center gap-2">
                             <i data-lucide="crown" class="w-4 h-4"></i> FINAL
                         </span>
-                        ${generateInputHTML(matchesData[14])}
+                        ${generateInputHTML(matchesData[14], 14)}
                         
                         <div class="flex flex-col items-center justify-center w-full mt-4 pointer-events-none">
                             <img src="efootball-logo-1.png" alt="eFootball Logo" class="h-24 object-contain opacity-80" onerror="this.style.display='none'">
@@ -198,26 +220,54 @@
                 <!-- Right Side: Semifinal -->
                 <div class="bracket-round relative">
                     <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Semifinal</div>
-                    ${generateInputHTML(matchesData[13])}
+                    ${generateInputHTML(matchesData[13], 13)}
                 </div>
                 
                 <!-- Right Side: Quartas -->
                 <div class="bracket-round relative">
                     <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Quartas</div>
-                    ${generateInputHTML(matchesData[10])}
-                    ${generateInputHTML(matchesData[11])}
+                    ${generateInputHTML(matchesData[10], 10)}
+                    ${generateInputHTML(matchesData[11], 11)}
                 </div>
                 
                 <!-- Right Side: Oitavas -->
                 <div class="bracket-round relative">
                     <div class="absolute -top-8 w-full text-center text-slate-400 font-bold text-[10px] tracking-widest uppercase">Oitavas</div>
-                    ${generateInputHTML(matchesData[4])}
-                    ${generateInputHTML(matchesData[5])}
-                    ${generateInputHTML(matchesData[6])}
-                    ${generateInputHTML(matchesData[7])}
+                    ${generateInputHTML(matchesData[4], 4)}
+                    ${generateInputHTML(matchesData[5], 5)}
+                    ${generateInputHTML(matchesData[6], 6)}
+                    ${generateInputHTML(matchesData[7], 7)}
                 </div>
             `;
             lucide.createIcons();
+        }
+
+        function advancePlayer(sourceIndex, sourcePlayer) {
+            const nextNodeMap = {
+                0: { next: 8, slot: 1 }, 1: { next: 8, slot: 2 },
+                2: { next: 9, slot: 1 }, 3: { next: 9, slot: 2 },
+                4: { next: 10, slot: 1 }, 5: { next: 10, slot: 2 },
+                6: { next: 11, slot: 1 }, 7: { next: 11, slot: 2 },
+                8: { next: 12, slot: 1 }, 9: { next: 12, slot: 2 },
+                10: { next: 13, slot: 1 }, 11: { next: 13, slot: 2 },
+                12: { next: 14, slot: 1 }, 13: { next: 14, slot: 2 }
+            };
+            
+            const map = nextNodeMap[sourceIndex];
+            if (!map) return;
+            
+            const sourceBox = document.getElementById(`match-${sourceIndex}`);
+            const targetBox = document.getElementById(`match-${map.next}`);
+            
+            if(!sourceBox || !targetBox) return;
+            
+            const name = sourceBox.querySelector(sourcePlayer === 1 ? '.p1-name' : '.p2-name').value;
+            const targetInput = targetBox.querySelector(map.slot === 1 ? '.p1-name' : '.p2-name');
+            
+            targetInput.value = name;
+            targetInput.style.transition = 'background-color 0.3s ease';
+            targetInput.style.backgroundColor = '#d1fae5'; // emerald-100 highlight
+            setTimeout(() => { targetInput.style.backgroundColor = 'transparent'; }, 600);
         }
 
         async function initializeBracket() {
