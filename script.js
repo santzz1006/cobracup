@@ -991,7 +991,7 @@ window.closeUpdateModal = function() {
 }
 
 window.claimUpdateReward = async function() {
-    if (!state.user || !state.user.id) {
+    if (!state.user || !state.user.id || !state.profile) {
         showToast("Você precisa logar primeiro!");
         closeUpdateModal();
         return;
@@ -1001,7 +1001,7 @@ window.claimUpdateReward = async function() {
     btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Resgatando...';
     btn.disabled = true;
     
-    const newBalance = state.user.balance + 150;
+    const newBalance = (state.profile.coin_balance || 0) + 150;
     
     const { error } = await supabaseClient
         .from('profiles')
@@ -1016,8 +1016,17 @@ window.claimUpdateReward = async function() {
         return;
     }
     
-    state.user.balance = newBalance;
-    updateBalanceDisplay();
+    state.profile.coin_balance = newBalance;
+    
+    // Atualizar UI
+    const bal = newBalance.toLocaleString();
+    const topBal = document.getElementById('coin-balance');
+    const cardBal = document.getElementById('card-balance');
+    const profBal = document.getElementById('profile-balance');
+    if (topBal) topBal.innerText = bal;
+    if (cardBal) cardBal.innerText = bal;
+    if (profBal) profBal.innerText = bal;
+
     localStorage.setItem('update_v2_claimed', 'true');
     localStorage.setItem('update_v2_seen', 'true');
     showToast("150 CPC resgatadas com sucesso! 🎉");
