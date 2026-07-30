@@ -269,19 +269,79 @@
                 return;
             }
 
-            // Animação de Avanço
+            // Animação de Avanço (Visual)
             const targetInput = targetBox.querySelector(map.slot === 1 ? '.p1-name' : '.p2-name');
-            targetInput.value = name;
             targetInput.style.transition = 'background-color 0.3s ease';
             targetInput.style.backgroundColor = '#d1fae5'; 
             setTimeout(() => { targetInput.style.backgroundColor = 'transparent'; }, 600);
 
-            // Pergunta sobre as apostas
-            if(confirm(`Deseja ENCERRAR a partida atual e PAGAR as apostas para quem apostou no(a) ${name}? Essa ação fechará o mercado desta partida.`)) {
-                try {
-                    // 1. Fechar a partida no banco
-                    const { error: matchError } = await supabaseClient.from('matches').update({ status: 'finished', winner: name }).eq('id', matchId);
-                    if (matchError) throw matchError;
+            // Abrir Modal de Estatísticas em vez de dar só confirm()
+            const p1Name = sourceBox.querySelector('.p1-name').value || 'Jogador 1';
+            const p2Name = sourceBox.querySelector('.p2-name').value || 'Jogador 2';
+            const p1Score = sourceBox.querySelector('.p1-score').value;
+            const p2Score = sourceBox.querySelector('.p2-score').value;
+
+            document.getElementById('stats-match-id').value = matchId;
+            document.getElementById('stats-winner-name').value = name;
+            document.getElementById('stats-source-index').value = sourceIndex;
+            document.getElementById('stats-target-index').value = map.next;
+            document.getElementById('stats-target-slot').value = map.slot;
+
+            document.getElementById('stats-p1-label').innerText = p1Name;
+            document.getElementById('stats-p2-label').innerText = p2Name;
+            document.getElementById('stats-p1-score').value = p1Score;
+            document.getElementById('stats-p2-score').value = p2Score;
+            document.getElementById('stats-p1-passes').value = '';
+            document.getElementById('stats-p2-passes').value = '';
+            document.getElementById('stats-p1-shots').value = '';
+            document.getElementById('stats-p2-shots').value = '';
+
+            const modal = document.getElementById('stats-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeStatsModal() {
+            const modal = document.getElementById('stats-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function confirmResolveMatch() {
+            const matchId = document.getElementById('stats-match-id').value;
+            const winnerName = document.getElementById('stats-winner-name').value;
+            const sourceIndex = document.getElementById('stats-source-index').value;
+            const targetIndex = document.getElementById('stats-target-index').value;
+            const targetSlot = document.getElementById('stats-target-slot').value;
+
+            const p1Score = parseInt(document.getElementById('stats-p1-score').value) || 0;
+            const p2Score = parseInt(document.getElementById('stats-p2-score').value) || 0;
+            const p1Passes = parseInt(document.getElementById('stats-p1-passes').value) || 0;
+            const p2Passes = parseInt(document.getElementById('stats-p2-passes').value) || 0;
+            const p1Shots = parseInt(document.getElementById('stats-p1-shots').value) || 0;
+            const p2Shots = parseInt(document.getElementById('stats-p2-shots').value) || 0;
+
+            // Avança o nome fisicamente para a próxima caixa
+            const targetBox = document.getElementById(`match-${targetIndex}`);
+            const targetInput = targetBox.querySelector(targetSlot == 1 ? '.p1-name' : '.p2-name');
+            targetInput.value = winnerName;
+
+            closeStatsModal();
+
+            try {
+                // 1. Fechar a partida no banco COM ESTATÍSTICAS
+                const { error: matchError } = await supabaseClient.from('matches').update({ 
+                    status: 'finished', 
+                    winner: winnerName,
+                    score_p1: p1Score,
+                    score_p2: p2Score,
+                    passes_p1: p1Passes,
+                    passes_p2: p2Passes,
+                    shots_p1: p1Shots,
+                    shots_p2: p2Shots
+                }).eq('id', matchId);
+                
+                if (matchError) throw matchError;
                     
                     // 2. Buscar todas as apostas simples pendentes para essa partida
                     const { data: bets, error: betFetchError } = await supabaseClient.from('bets')
