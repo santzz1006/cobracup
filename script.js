@@ -882,8 +882,8 @@ function renderProfileHistory() {
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-right">
-                        <div class="text-sm font-semibold text-slate-600">${bet.amount} 🪙</div>
-                        <div class="text-xs text-slate-400">Retorno: ${payout} 🪙</div>
+                        <div class="text-sm font-semibold text-slate-600">${bet.amount} <img src="cup-coin.png" class="w-4 h-4 object-contain inline-block align-middle"></div>
+                        <div class="text-xs text-slate-400">Retorno: ${payout} <img src="cup-coin.png" class="w-3 h-3 object-contain inline-block align-middle mb-0.5"></div>
                     </div>
                     <div>${statusBadge}</div>
                 </div>
