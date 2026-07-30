@@ -834,7 +834,10 @@ window.placeCartBet = async function() {
         document.getElementById('cart-amount').value = '';
         renderCart();
         toggleCart();
-        if (state.user) loadUserBets(state.user.id);
+        if (state.user) {
+            await loadBets();
+            renderProfileHistory();
+        }
     } catch (err) {
         alert("Erro ao realizar aposta: " + err.message);
     }
