@@ -154,7 +154,8 @@ async function loadMatches() {
     const { data, error } = await supabaseClient
         .from('matches')
         .select('*')
-        .order('created_at', { ascending: true }); // Ordenar para manter a árvore fixa
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true }); // Ordenar para manter a árvore fixa
         
     if (data) {
         state.matches = data;
