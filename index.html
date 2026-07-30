@@ -57,7 +57,7 @@
             <div class="flex items-center gap-6">
                 <!-- Coin Balance -->
                 <div class="flex items-center gap-2 bg-amber-50 px-4 py-2 rounded-xl border border-amber-200 shadow-sm cursor-pointer hover:bg-amber-100 transition-colors" onclick="nav('profile')">
-                    <i data-lucide="coins" class="text-amber-500 w-5 h-5"></i>
+                    <img src="cup-coin.png" class="w-6 h-6 object-contain">
                     <span class="font-bold text-amber-700" id="coin-balance">0</span>
                 </div>
                 
@@ -229,7 +229,7 @@
                             <div class="bg-slate-50 p-4 rounded-xl text-left border border-slate-100">
                                 <p class="text-xs text-slate-500 uppercase font-semibold mb-1">Saldo Atual</p>
                                 <p class="text-2xl font-bold text-brand-600 flex items-center gap-2">
-                                    <i data-lucide="coins" class="w-5 h-5 text-amber-500"></i>
+                                    <img src="cup-coin.png" class="w-6 h-6 object-contain">
                                     <span id="profile-balance">0</span>
                                 </p>
                             </div>
@@ -246,7 +246,7 @@
                                         <i data-lucide="gift" class="w-4 h-4"></i> Resgatar 30 CPC
                                     </button>
                                 </div>
-                                <i data-lucide="coins" class="w-24 h-24 text-emerald-500/10 absolute -bottom-6 -right-6 -rotate-12"></i>
+                                <img src="cup-coin.png" class="w-24 h-24 absolute -bottom-6 -right-6 -rotate-12 opacity-20 object-contain drop-shadow-md">
                             </div>
                         </div>
                     </div>
@@ -306,7 +306,7 @@
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm pointer-events-auto"></div>
         <div class="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 text-center relative z-10 scale-0 transition-transform duration-500 ease-out flex flex-col items-center shadow-2xl" id="reward-content">
             <div class="w-24 h-24 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-full flex items-center justify-center text-white mb-6 shadow-lg shadow-amber-500/40 relative">
-                <i data-lucide="coins" class="w-12 h-12 absolute animate-bounce-slow"></i>
+                <img src="cup-coin.png" class="w-16 h-16 absolute animate-bounce-slow object-contain">
                 <!-- Sparkles -->
                 <i data-lucide="sparkles" class="w-6 h-6 absolute top-0 right-0 text-yellow-100 animate-pulse"></i>
                 <i data-lucide="sparkles" class="w-4 h-4 absolute bottom-2 left-0 text-yellow-200 animate-pulse delay-75"></i>
@@ -369,7 +369,7 @@
                 <div class="dock-label">Chaveamento</div>
             </button>
             <button id="btn-bets" onclick="nav('bets')" class="dock-item" data-label="Apostas">
-                <i data-lucide="coins" class="dock-icon"></i>
+                <img src="cup-coin.png" class="dock-icon object-contain drop-shadow-sm">
                 <div class="dock-label">Apostas</div>
             </button>
             <button id="btn-rules" onclick="nav('rules')" class="dock-item" data-label="Regras">
@@ -441,7 +441,7 @@
                     
                     <div class="flex gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
                         <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                            <i data-lucide="coins" class="w-5 h-5 text-amber-600"></i>
+                            <img src="cup-coin.png" class="w-6 h-6 object-contain">
                         </div>
                         <div>
                             <h4 class="font-bold text-slate-800 text-sm">Apostas Múltiplas</h4>
@@ -506,10 +506,10 @@
                     </div>
                     
                     <div class="flex justify-between items-center mb-4">
-                        <span class="text-sm font-bold text-slate-500">Valor da Aposta (Coins)</span>
+                        <span class="text-sm font-bold text-slate-500">Valor da Aposta</span>
                         <div class="relative w-28">
-                            <i data-lucide="coins" class="w-4 h-4 text-amber-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                            <input type="number" id="cart-amount" class="w-full text-right border-2 border-slate-200 focus:border-brand-500 rounded-xl py-2 pr-3 pl-8 font-bold text-slate-700 outline-none transition-colors" placeholder="0" oninput="updateCartPotential()">
+                            <img src="cup-coin.png" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 object-contain">
+                            <input type="number" id="cart-amount" class="w-full text-right border-2 border-slate-200 focus:border-brand-500 rounded-xl py-2 pr-3 pl-9 font-bold text-slate-700 outline-none transition-colors" placeholder="0" oninput="updateCartPotential()">
                         </div>
                     </div>
                     
