@@ -702,7 +702,10 @@ window.openBetModal = function(matchId) {
     
     marketsContainer.innerHTML = html;
     document.getElementById('bet-modal').classList.remove('hidden');
-    document.getElemewindow.closeBetModal = function() {
+    document.getElementById('bet-modal').classList.add('flex');
+}
+
+window.closeBetModal = function() {
     document.getElementById('bet-modal').classList.add('hidden');
     document.getElementById('bet-modal').classList.remove('flex');
 }
@@ -711,16 +714,16 @@ window.openBetModal = function(matchId) {
 window.toggleCart = function() {
     state.isCartOpen = !state.isCartOpen;
     const cartEl = document.getElementById('bet-cart');
-    const chevron = document.getElementById('cart-chevron');
+    const fabEl = document.getElementById('cart-fab');
     
     if (state.isCartOpen) {
-        cartEl.classList.remove('translate-y-[calc(100%-60px)]');
-        cartEl.classList.add('translate-y-0');
-        chevron.classList.add('rotate-180');
+        cartEl.classList.remove('translate-y-[120%]', 'opacity-0', 'pointer-events-none');
+        cartEl.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+        if (fabEl) fabEl.classList.add('scale-0'); // Hide FAB when cart is open
     } else {
-        cartEl.classList.add('translate-y-[calc(100%-60px)]');
-        cartEl.classList.remove('translate-y-0');
-        chevron.classList.remove('rotate-180');
+        cartEl.classList.add('translate-y-[120%]', 'opacity-0', 'pointer-events-none');
+        cartEl.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+        if (fabEl) fabEl.classList.remove('scale-0'); // Show FAB when cart is closed
     }
 }
 
@@ -741,12 +744,14 @@ window.removeFromCart = function(index) {
 
 window.renderCart = function() {
     const badge = document.getElementById('cart-badge');
+    const badgeFab = document.getElementById('cart-badge-fab');
     const emptyState = document.getElementById('cart-empty');
     const itemsContainer = document.getElementById('cart-items');
     const checkoutArea = document.getElementById('cart-checkout');
     const typeBadge = document.getElementById('cart-type-badge');
     
-    badge.innerText = state.cart.length;
+    if (badge) badge.innerText = state.cart.length;
+    if (badgeFab) badgeFab.innerText = state.cart.length;
     
     if (state.cart.length === 0) {
         emptyState.classList.remove('hidden');
