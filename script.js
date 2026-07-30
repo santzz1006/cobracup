@@ -956,4 +956,79 @@ function initDock() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initDock);
+// UPDATE MODAL LOGIC
+window.openUpdateModal = function() {
+    const modal = document.getElementById('update-modal');
+    const content = document.getElementById('update-modal-content');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    const claimed = localStorage.getItem('update_v2_claimed') === 'true';
+    if (claimed) {
+        document.getElementById('reward-container').classList.add('hidden');
+        document.getElementById('close-container').classList.remove('hidden');
+    } else {
+        document.getElementById('reward-container').classList.remove('hidden');
+        document.getElementById('close-container').classList.add('hidden');
+    }
+
+    setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+window.closeUpdateModal = function() {
+    const modal = document.getElementById('update-modal');
+    const content = document.getElementById('update-modal-content');
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        localStorage.setItem('update_v2_seen', 'true');
+    }, 300);
+}
+
+window.claimUpdateReward = async function() {
+    if (!state.user || !state.user.id) {
+        showToast("Você precisa logar primeiro!");
+        closeUpdateModal();
+        return;
+    }
+    
+    const btn = event.currentTarget;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Resgatando...';
+    btn.disabled = true;
+    
+    const newBalance = state.user.balance + 150;
+    
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update({ coin_balance: newBalance })
+        .eq('id', state.user.id);
+        
+    if (error) {
+        showToast("Erro ao resgatar moedas.");
+        btn.innerHTML = '<i data-lucide="gift" class="w-5 h-5"></i> Resgatar 150 CPC Grátis!';
+        btn.disabled = false;
+        lucide.createIcons();
+        return;
+    }
+    
+    state.user.balance = newBalance;
+    updateBalanceDisplay();
+    localStorage.setItem('update_v2_claimed', 'true');
+    localStorage.setItem('update_v2_seen', 'true');
+    showToast("150 CPC resgatadas com sucesso! 🎉");
+    closeUpdateModal();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initDock();
+    setTimeout(() => {
+        if (localStorage.getItem('update_v2_seen') !== 'true') {
+            openUpdateModal();
+        }
+    }, 1500);
+});
