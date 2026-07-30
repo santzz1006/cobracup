@@ -75,6 +75,71 @@
         </div>
     </header>
 
+    <!-- Modal de Estatísticas da Partida -->
+    <div id="stats-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-slate-900 p-4 text-white flex justify-between items-center shrink-0">
+                <h3 class="font-black text-lg flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-5 h-5"></i> Estatísticas Finais</h3>
+                <button type="button" onclick="document.getElementById('stats-modal').classList.add('hidden'); document.getElementById('stats-modal').classList.remove('flex');" class="text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto">
+                <p class="text-sm text-slate-500 mb-6">Preencha as estatísticas da partida para resolver os mercados de apostas automaticamente.</p>
+                
+                <input type="hidden" id="stats-match-id">
+                <input type="hidden" id="stats-winner-name">
+                <input type="hidden" id="stats-source-index">
+                <input type="hidden" id="stats-target-index">
+                <input type="hidden" id="stats-target-slot">
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <!-- Player 1 Stats -->
+                    <div class="space-y-4">
+                        <div class="font-bold text-slate-800 border-b border-slate-200 pb-2 truncate" id="stats-p1-label">Player 1</div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Gols</label>
+                            <input type="number" id="stats-p1-score" class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 font-black text-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Passes Certos</label>
+                            <input type="number" id="stats-p1-passes" class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 font-black text-lg focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Ex: 85">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Chutes no Gol</label>
+                            <input type="number" id="stats-p1-shots" class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 font-black text-lg focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Ex: 5">
+                        </div>
+                    </div>
+                    
+                    <!-- Player 2 Stats -->
+                    <div class="space-y-4">
+                        <div class="font-bold text-slate-800 border-b border-slate-200 pb-2 truncate" id="stats-p2-label">Player 2</div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Gols</label>
+                            <input type="number" id="stats-p2-score" class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 font-black text-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Passes Certos</label>
+                            <input type="number" id="stats-p2-passes" class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 font-black text-lg focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Ex: 85">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Chutes no Gol</label>
+                            <input type="number" id="stats-p2-shots" class="w-full bg-slate-100 border border-slate-200 rounded-lg p-2 font-black text-lg focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="Ex: 5">
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <div class="p-4 bg-slate-50 border-t border-slate-200 shrink-0">
+                <button type="button" onclick="confirmResolveMatch()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-black py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i> Confirmar & Pagar Apostas
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="flex-1 overflow-auto p-4 md:p-8 bg-slate-100 relative">
         <div id="bracket-container" class="flex justify-between w-full max-w-[1200px] min-w-[900px] mx-auto min-h-[500px]">
             <!-- Bracket will be injected here -->
