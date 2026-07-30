@@ -702,66 +702,136 @@ window.openBetModal = function(matchId) {
     
     marketsContainer.innerHTML = html;
     document.getElementById('bet-modal').classList.remove('hidden');
-    document.getElementById('bet-modal').classList.add('flex');
+    document.getElemewindow.closeBetModal = function() {
+    document.getElementById('bet-modal').classList.add('hidden');
+    document.getElementById('bet-modal').classList.remove('flex');
 }
 
-window.closeBetModal = function() {
-    }
-}
-
-async function confirmBet() {
-    const amount = parseInt(document.getElementById('bet-amount').value);
-    if (!amount || amount <= 0 || !state.user || amount > state.user.balance) return;
-
-    document.getElementById('btn-confirm-bet').innerText = "Processando...";
-    document.getElementById('btn-confirm-bet').disabled = true;
-
-    // 1. Inserir aposta
-    const { data: bet, error: betError } = await supabaseClient
-        .from('bets')
-        .insert([{
-            user_id: state.user.id,
-            match_id: state.selectedBetMatchId,
-            predicted_winner: state.selectedBetWinner,
-            amount: amount,
-            status: 'pending'
-        }])
-        .select()
-        .single();
-
-    if (betError) {
-        alert("Erro ao apostar: " + betError.message);
-        document.getElementById('btn-confirm-bet').innerText = "Confirmar Aposta";
-        return;
-    }
-
-    // 2. Atualizar saldo do usuário
-    const newBalance = state.user.balance - amount;
-    const { error: profileError } = await supabaseClient
-        .from('profiles')
-        .update({ coin_balance: newBalance })
-        .eq('id', state.user.id);
-
-    if (profileError) {
-        alert("Erro ao debitar saldo: " + profileError.message);
-        document.getElementById('btn-confirm-bet').innerText = "Confirmar Aposta";
-        return;
-    }
-
-    // Sucesso local
-    state.user.balance = newBalance;
-    state.bets.unshift({
-        ...bet,
-        matches: state.matches.find(m => m.id === state.selectedBetMatchId)
-    });
-
-    updateUIBalances();
-    closeBetModal();
-    showToast('Aposta salva no Supabase com sucesso!');
+// LÓGICA DO CARRINHO DE APOSTAS
+window.toggleCart = function() {
+    state.isCartOpen = !state.isCartOpen;
+    const cartEl = document.getElementById('bet-cart');
+    const chevron = document.getElementById('cart-chevron');
     
-    document.getElementById('btn-confirm-bet').innerText = "Confirmar Aposta";
-    if (!document.getElementById('page-profile').classList.contains('hidden')) {
-        renderProfileHistory();
+    if (state.isCartOpen) {
+        cartEl.classList.remove('translate-y-[calc(100%-60px)]');
+        cartEl.classList.add('translate-y-0');
+        chevron.classList.add('rotate-180');
+    } else {
+        cartEl.classList.add('translate-y-[calc(100%-60px)]');
+        cartEl.classList.remove('translate-y-0');
+        chevron.classList.remove('rotate-180');
+    }
+}
+
+window.addToCart = function(matchId, matchTitle, marketKey, marketName, selectionKey, selectionName, odd) {
+    const existingIndex = state.cart.findIndex(item => item.match_id === matchId && item.market_key === marketKey);
+    const item = { match_id: matchId, match_title: matchTitle, market_key: marketKey, market_name: marketName, selection_key: selectionKey, selection_name: selectionName, odd: odd };
+    if (existingIndex > -1) { state.cart[existingIndex] = item; } else { state.cart.push(item); }
+    showToast(`Adicionado ao cupom: ${selectionName}`);
+    renderCart();
+    closeBetModal();
+    if(!state.isCartOpen) toggleCart();
+}
+
+window.removeFromCart = function(index) {
+    state.cart.splice(index, 1);
+    renderCart();
+}
+
+window.renderCart = function() {
+    const badge = document.getElementById('cart-badge');
+    const emptyState = document.getElementById('cart-empty');
+    const itemsContainer = document.getElementById('cart-items');
+    const checkoutArea = document.getElementById('cart-checkout');
+    const typeBadge = document.getElementById('cart-type-badge');
+    
+    badge.innerText = state.cart.length;
+    
+    if (state.cart.length === 0) {
+        emptyState.classList.remove('hidden');
+        itemsContainer.classList.add('hidden');
+        checkoutArea.classList.add('hidden');
+        typeBadge.innerText = 'Vazio';
+        typeBadge.className = 'bg-slate-700 px-2 py-1 rounded text-xs font-bold text-slate-400';
+    } else {
+        emptyState.classList.add('hidden');
+        itemsContainer.classList.remove('hidden');
+        checkoutArea.classList.remove('hidden');
+        typeBadge.innerText = state.cart.length > 1 ? 'Múltipla' : 'Simples';
+        typeBadge.className = state.cart.length > 1 ? 'bg-amber-500 px-2 py-1 rounded text-xs font-bold text-slate-900 shadow-sm' : 'bg-brand-500 px-2 py-1 rounded text-xs font-bold text-white shadow-sm';
+        
+        let html = '';
+        let totalOdd = 1.0;
+        state.cart.forEach((item, index) => {
+            totalOdd *= item.odd;
+            html += `
+                <div class="bg-white p-3 rounded-xl border border-slate-200 relative">
+                    <button onclick="removeFromCart(${index})" class="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <div class="text-xs text-slate-500 font-bold mb-1">${item.match_title}</div>
+                    <div class="text-sm font-bold text-slate-800">${item.market_name}</div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-sm font-black text-brand-600">${item.selection_name}</span>
+                        <span class="text-sm font-black bg-slate-100 px-2 py-1 rounded border border-slate-200">${item.odd.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        });
+        itemsContainer.innerHTML = html;
+        document.getElementById('cart-total-odds').innerText = totalOdd.toFixed(2);
+        lucide.createIcons();
+        updateCartPotential();
+    }
+}
+
+window.updateCartPotential = function() {
+    const amount = parseInt(document.getElementById('cart-amount').value) || 0;
+    if (state.cart.length === 0) {
+        document.getElementById('cart-potential').innerText = '0';
+        return;
+    }
+    let totalOdd = 1.0;
+    state.cart.forEach(item => totalOdd *= item.odd);
+    document.getElementById('cart-potential').innerText = Math.floor(amount * totalOdd);
+}
+
+window.placeCartBet = async function() {
+    if (!state.user) { alert("Você precisa estar logado!"); return; }
+    if (state.cart.length === 0) { alert("Seu cupom está vazio."); return; }
+    const amount = parseInt(document.getElementById('cart-amount').value);
+    if (isNaN(amount) || amount <= 0) { alert("Insira um valor válido para a aposta."); return; }
+    if (!state.profile || state.profile.coin_balance < amount) { alert("Saldo insuficiente!"); return; }
+
+    try {
+        let totalOdd = 1.0;
+        state.cart.forEach(item => totalOdd *= item.odd);
+        const type = state.cart.length > 1 ? 'multiple' : 'single';
+
+        const { error } = await supabaseClient.from('bets').insert({
+            user_id: state.user.id,
+            amount: amount,
+            type: type,
+            predictions: state.cart,
+            potential_payout: Math.floor(amount * totalOdd),
+            status: 'pending'
+        });
+
+        if (error) throw error;
+        
+        const newBalance = state.profile.coin_balance - amount;
+        await supabaseClient.from('profiles').update({ coin_balance: newBalance }).eq('id', state.user.id);
+        
+        state.profile.coin_balance = newBalance;
+        updateUIBalances();
+        showToast("Aposta realizada com sucesso!");
+        
+        state.cart = [];
+        document.getElementById('cart-amount').value = '';
+        renderCart();
+        toggleCart();
+        if (state.user) loadUserBets(state.user.id);
+    } catch (err) {
+        alert("Erro ao realizar aposta: " + err.message);
     }
 }
 
@@ -784,18 +854,28 @@ function renderProfileHistory() {
         if (bet.status === 'won') statusBadge = '<span class="bg-brand-100 text-brand-700 text-xs px-2 py-1 rounded font-bold">Ganhou</span>';
         if (bet.status === 'lost') statusBadge = '<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded font-bold">Perdeu</span>';
 
-        const matchStr = bet.matches ? `${bet.matches.player1_name} vs ${bet.matches.player2_name}` : 'Partida Desconhecida';
+        let desc = '';
+        if (bet.type === 'multiple' && bet.predictions) {
+            desc = bet.predictions.map(p => `• ${p.match_title}: ${p.market_name} - <b>${p.selection_name}</b>`).join('<br>');
+        } else if (bet.predictions && bet.predictions.length > 0) {
+            desc = `<b>${bet.predictions[0].selection_name}</b>`;
+        } else {
+            desc = `<b>${bet.predicted_winner}</b> (Antigo)`;
+        }
+
+        const title = bet.type === 'multiple' ? 'Aposta Múltipla' : 'Aposta Simples';
+        const payout = bet.potential_payout ? bet.potential_payout : (bet.amount * 2);
 
         return `
             <div class="py-4 flex flex-col md:flex-row justify-between md:items-center gap-2">
                 <div>
-                    <div class="font-bold text-slate-800">${matchStr}</div>
-                    <div class="text-sm text-slate-500">Apostou em: <span class="font-bold text-slate-700">${bet.predicted_winner}</span></div>
+                    <div class="font-bold text-slate-800">${title}</div>
+                    <div class="text-sm text-slate-500 mt-1 leading-tight">${desc}</div>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-right">
-                        <div class="text-sm font-semibold text-slate-600">${bet.amount} 🪙 apostados</div>
-                        <div class="text-xs text-slate-400">Retorno: ${bet.amount * 2} 🪙</div>
+                        <div class="text-sm font-semibold text-slate-600">${bet.amount} 🪙</div>
+                        <div class="text-xs text-slate-400">Retorno: ${payout} 🪙</div>
                     </div>
                     <div>${statusBadge}</div>
                 </div>
