@@ -280,35 +280,44 @@
             if(confirm(`Deseja ENCERRAR a partida atual e PAGAR as apostas para quem apostou no(a) ${name}? Essa ação fechará o mercado desta partida.`)) {
                 try {
                     // 1. Fechar a partida no banco
-                    await supabaseClient.from('matches').update({ status: 'finished', winner: name }).eq('id', matchId);
+                    const { error: matchError } = await supabaseClient.from('matches').update({ status: 'finished', winner: name }).eq('id', matchId);
+                    if (matchError) throw matchError;
                     
                     // 2. Buscar todas as apostas simples pendentes para essa partida
-                    const { data: bets } = await supabaseClient.from('bets')
+                    const { data: bets, error: betFetchError } = await supabaseClient.from('bets')
                         .select('*')
                         .eq('match_id', matchId)
                         .eq('status', 'pending');
                     
+                    if (betFetchError) throw betFetchError;
+
                     let payoutCount = 0;
                     
                     // 3. Processar cada aposta
                     if (bets && bets.length > 0) {
                         for (let bet of bets) {
                             if (bet.predicted_winner === name) {
-                                // Ganhou! Paga o dobro (ODD 2.0 temporária)
                                 const profit = bet.amount * 2;
-                                await supabaseClient.rpc('update_user_balance', { p_user_id: bet.user_id, p_amount: profit });
-                                await supabaseClient.from('bets').update({ status: 'won' }).eq('id', bet.id);
+                                const { error: rpcError } = await supabaseClient.rpc('update_user_balance', { p_user_id: bet.user_id, p_amount: profit });
+                                if (rpcError) throw rpcError;
+
+                                const { error: wonError } = await supabaseClient.from('bets').update({ status: 'won' }).eq('id', bet.id);
+                                if (wonError) throw wonError;
                                 payoutCount++;
                             } else {
-                                // Perdeu
-                                await supabaseClient.from('bets').update({ status: 'lost' }).eq('id', bet.id);
+                                const { error: lostError } = await supabaseClient.from('bets').update({ status: 'lost' }).eq('id', bet.id);
+                                if (lostError) throw lostError;
                             }
                         }
                     }
                     
                     alert(`Partida encerrada com sucesso! ${payoutCount} aposta(s) vencedora(s) foram pagas.`);
+                    
+                    // Salvar também o nome na nova fase automaticamente
+                    await saveAllMatches();
+                    
                 } catch (err) {
-                    alert("Erro ao processar pagamentos: " + err.message);
+                    alert("⚠️ ERRO: O banco bloqueou a ação. Motivo: " + err.message);
                 }
             }
         }
