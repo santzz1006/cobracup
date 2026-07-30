@@ -530,16 +530,23 @@ function renderBracket() {
         return;
     }
     
-    const generateMatchHTML = (m, extraClass = '') => `
-        <div class="match-box ${extraClass}">
-            <div class="match-player">${m && m.player1_name ? m.player1_name : '?'} <span class="score">${m && m.score_p1 !== null ? m.score_p1 : '-'}</span></div>
-            <div class="match-player">${m && m.player2_name ? m.player2_name : '?'} <span class="score">${m && m.score_p2 !== null ? m.score_p2 : '-'}</span></div>
+    const generateMatchHTML = (m, extraClass = '') => {
+        const isFinished = m && m.status === 'finished';
+        const betButton = isFinished 
+            ? `<span class="text-sm text-slate-400 font-bold w-full block"><i data-lucide="lock" class="w-3 h-3 inline"></i> Fechado</span>` 
+            : `<button onclick="openBetModal('${m ? m.id : ''}')" class="text-sm text-brand-600 font-bold hover:underline w-full">Fazer Aposta</button>`;
             
-            <div class="mt-5 text-center opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-0 left-0 right-0 bg-white p-2">
-                <button onclick="openBetModal('${m.id}')" class="text-sm text-brand-600 font-bold hover:underline w-full">Apostar</button>
+        return `
+            <div class="match-box ${extraClass} group relative overflow-hidden">
+                <div class="match-player">${m && m.player1_name ? m.player1_name : '?'} <span class="score">${m && m.score_p1 !== null ? m.score_p1 : '-'}</span></div>
+                <div class="match-player">${m && m.player2_name ? m.player2_name : '?'} <span class="score">${m && m.score_p2 !== null ? m.score_p2 : '-'}</span></div>
+                
+                <div class="mt-5 text-center opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-0 left-0 right-0 bg-white p-2 border-t border-slate-100">
+                    ${m && m.player1_name && m.player2_name ? betButton : ''}
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    };
 
     const html = `
         <!-- Left Side: Oitavas -->

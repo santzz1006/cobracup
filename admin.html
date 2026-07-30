@@ -242,7 +242,7 @@
             lucide.createIcons();
         }
 
-        function advancePlayer(sourceIndex, sourcePlayer) {
+        async function advancePlayer(sourceIndex, sourcePlayer) {
             const nextNodeMap = {
                 0: { next: 8, slot: 1 }, 1: { next: 8, slot: 2 },
                 2: { next: 9, slot: 1 }, 3: { next: 9, slot: 2 },
@@ -262,12 +262,55 @@
             if(!sourceBox || !targetBox) return;
             
             const name = sourceBox.querySelector(sourcePlayer === 1 ? '.p1-name' : '.p2-name').value;
-            const targetInput = targetBox.querySelector(map.slot === 1 ? '.p1-name' : '.p2-name');
+            const matchId = sourceBox.getAttribute('data-id');
             
+            if (!name) {
+                alert("O nome do jogador está vazio!");
+                return;
+            }
+
+            // Animação de Avanço
+            const targetInput = targetBox.querySelector(map.slot === 1 ? '.p1-name' : '.p2-name');
             targetInput.value = name;
             targetInput.style.transition = 'background-color 0.3s ease';
-            targetInput.style.backgroundColor = '#d1fae5'; // emerald-100 highlight
+            targetInput.style.backgroundColor = '#d1fae5'; 
             setTimeout(() => { targetInput.style.backgroundColor = 'transparent'; }, 600);
+
+            // Pergunta sobre as apostas
+            if(confirm(`Deseja ENCERRAR a partida atual e PAGAR as apostas para quem apostou no(a) ${name}? Essa ação fechará o mercado desta partida.`)) {
+                try {
+                    // 1. Fechar a partida no banco
+                    await supabaseClient.from('matches').update({ status: 'finished', winner: name }).eq('id', matchId);
+                    
+                    // 2. Buscar todas as apostas simples pendentes para essa partida
+                    const { data: bets } = await supabaseClient.from('bets')
+                        .select('*')
+                        .eq('match_id', matchId)
+                        .eq('status', 'pending');
+                    
+                    let payoutCount = 0;
+                    
+                    // 3. Processar cada aposta
+                    if (bets && bets.length > 0) {
+                        for (let bet of bets) {
+                            if (bet.predicted_winner === name) {
+                                // Ganhou! Paga o dobro (ODD 2.0 temporária)
+                                const profit = bet.amount * 2;
+                                await supabaseClient.rpc('update_user_balance', { p_user_id: bet.user_id, p_amount: profit });
+                                await supabaseClient.from('bets').update({ status: 'won' }).eq('id', bet.id);
+                                payoutCount++;
+                            } else {
+                                // Perdeu
+                                await supabaseClient.from('bets').update({ status: 'lost' }).eq('id', bet.id);
+                            }
+                        }
+                    }
+                    
+                    alert(`Partida encerrada com sucesso! ${payoutCount} aposta(s) vencedora(s) foram pagas.`);
+                } catch (err) {
+                    alert("Erro ao processar pagamentos: " + err.message);
+                }
+            }
         }
 
         async function initializeBracket() {
