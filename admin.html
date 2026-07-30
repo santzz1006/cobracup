@@ -276,10 +276,12 @@
             setTimeout(() => { targetInput.style.backgroundColor = 'transparent'; }, 600);
 
             // Abrir Modal de Estatísticas em vez de dar só confirm()
-            const p1Name = sourceBox.querySelector('.p1-name').value || 'Jogador 1';
-            const p2Name = sourceBox.querySelector('.p2-name').value || 'Jogador 2';
-            const p1Score = sourceBox.querySelector('.p1-score').value;
-            const p2Score = sourceBox.querySelector('.p2-score').value;
+            const p1Name = sourceBox.querySelector('.p1-name')?.value || 'Jogador 1';
+            const p2Name = sourceBox.querySelector('.p2-name')?.value || 'Jogador 2';
+            const p1ScoreEl = sourceBox.querySelector('.p1-score');
+            const p2ScoreEl = sourceBox.querySelector('.p2-score');
+            const p1Score = p1ScoreEl ? p1ScoreEl.value : 0;
+            const p2Score = p2ScoreEl ? p2ScoreEl.value : 0;
 
             document.getElementById('stats-match-id').value = matchId;
             document.getElementById('stats-winner-name').value = name;
@@ -420,10 +422,12 @@
 
             boxes.forEach(box => {
                 const id = box.getAttribute('data-id');
-                const n1 = box.querySelector('.p1-name').value;
-                const n2 = box.querySelector('.p2-name').value;
-                const s1 = box.querySelector('.p1-score').value;
-                const s2 = box.querySelector('.p2-score').value;
+                const n1 = box.querySelector('.p1-name')?.value || '';
+                const n2 = box.querySelector('.p2-name')?.value || '';
+                const s1El = box.querySelector('.p1-score');
+                const s2El = box.querySelector('.p2-score');
+                const s1 = s1El ? s1El.value : '';
+                const s2 = s2El ? s2El.value : '';
 
                 updates.push({
                     id: id,
