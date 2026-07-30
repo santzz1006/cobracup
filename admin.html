@@ -356,7 +356,7 @@
                     // 3. Processar cada aposta
                     if (bets && bets.length > 0) {
                         for (let bet of bets) {
-                            if (bet.predicted_winner === name) {
+                            if (bet.predicted_winner === winnerName) {
                                 const profit = bet.amount * 2;
                                 const { error: rpcError } = await supabaseClient.rpc('update_user_balance', { p_user_id: bet.user_id, p_amount: profit });
                                 if (rpcError) throw rpcError;
@@ -379,7 +379,6 @@
                 } catch (err) {
                     alert("⚠️ ERRO: O banco bloqueou a ação. Motivo: " + err.message);
                 }
-            }
         }
 
         async function initializeBracket() {

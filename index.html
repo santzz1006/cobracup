@@ -90,7 +90,27 @@
                         </div>
                     </div>
                     
-                    <!-- Sidebar info -->
+                    <!-- MODALS -->
+        <!-- Bet Market Modal -->
+        <div id="bet-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800">Mercados de Aposta</h3>
+                        <p class="text-sm text-slate-500 font-medium mt-1" id="bet-modal-match-title">Jogador 1 vs Jogador 2</p>
+                    </div>
+                    <button onclick="closeBetModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 hover:text-slate-700 transition-colors">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                
+                <div class="p-6 flex-1 overflow-y-auto bg-slate-50">
+                    <div id="bet-modal-markets" class="space-y-6">
+                        <!-- Mercados serão injetados aqui via JS -->
+                    </div>
+                </div>
+            </div>
+        </div><!-- Sidebar info -->
                     <div class="space-y-6">
                         <!-- Wallet Card -->
                         <div class="bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl p-6 text-white shadow-lg shadow-brand-500/20">
@@ -256,50 +276,6 @@
         </main>
     </div>
 
-    <!-- BET MODAL -->
-    <div id="bet-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden opacity-0 transition-opacity duration-200">
-        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl scale-95 transition-transform duration-200" id="bet-modal-content">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                <h3 class="font-bold text-xl flex items-center gap-2">
-                    <i data-lucide="coins" class="text-amber-500"></i>
-                    Nova Aposta
-                </h3>
-                <button onclick="closeBetModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 transition-colors">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <p class="text-sm text-slate-500 mb-5 text-center bg-slate-50 p-2 rounded-lg" id="bet-modal-match-title">Victor vs Mendes</p>
-                
-                <h4 class="font-semibold text-sm mb-3 text-slate-700">Quem vai vencer?</h4>
-                <div class="grid grid-cols-2 gap-3 mb-6" id="bet-modal-players">
-                    <!-- Buttons injected via JS -->
-                </div>
-
-                <div class="mb-6">
-                    <label class="block font-semibold text-sm mb-2 text-slate-700">Valor da Aposta (CPC)</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i data-lucide="coins" class="text-amber-500 w-5 h-5"></i>
-                        </div>
-                        <input type="number" id="bet-amount" class="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors text-lg font-semibold" placeholder="100" min="10" step="10">
-                    </div>
-                    <div class="flex justify-between items-center mt-3 bg-brand-50 p-3 rounded-lg border border-brand-100">
-                        <span class="text-sm text-brand-800 font-medium">Retorno potencial (2.0x):</span>
-                        <span class="font-bold text-brand-600 text-lg flex items-center gap-1">
-                            <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
-                            <span id="bet-return">0</span>
-                        </span>
-                    </div>
-                </div>
-
-                <button id="btn-confirm-bet" class="w-full bg-brand-500 text-white font-bold py-3.5 rounded-xl hover:bg-brand-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-brand-500/30">
-                    Confirmar Aposta
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 z-[200]">
         <i data-lucide="check-circle" class="text-brand-400 w-5 h-5" id="toast-icon"></i>
@@ -411,7 +387,63 @@
             </button>
         </div>
     </div>
+        <!-- Cupom de Apostas (Carrinho Flutuante) -->
+        <div id="bet-cart" class="fixed bottom-0 right-0 md:right-6 w-full md:w-96 bg-white shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.3)] z-[60] flex flex-col transition-transform transform translate-y-[calc(100%-60px)] rounded-t-2xl md:rounded-t-3xl border border-slate-200">
+            <!-- Header do Carrinho -->
+            <div class="bg-slate-900 text-white p-4 flex justify-between items-center cursor-pointer rounded-t-2xl md:rounded-t-3xl hover:bg-slate-800 transition-colors" onclick="toggleCart()">
+                <div class="flex items-center gap-3 font-black text-lg">
+                    <div class="bg-brand-500 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-sm" id="cart-badge">0</div>
+                    Cupom de Apostas
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="bg-slate-700 px-2 py-1 rounded text-xs font-bold text-brand-300" id="cart-type-badge">Simples</span>
+                    <i data-lucide="chevron-up" id="cart-chevron" class="transition-transform duration-300"></i>
+                </div>
+            </div>
+            
+            <!-- Corpo do Carrinho -->
+            <div class="flex-1 flex flex-col bg-slate-50 max-h-[60vh] md:max-h-[70vh]">
+                <div id="cart-empty" class="p-8 text-center text-slate-400">
+                    <i data-lucide="shopping-cart" class="w-12 h-12 mx-auto mb-3 opacity-20"></i>
+                    <p class="font-medium">Seu cupom está vazio.</p>
+                </div>
+                
+                <div id="cart-items" class="flex-1 overflow-y-auto p-3 space-y-3 hidden">
+                    <!-- Legs injetadas pelo JS -->
+                </div>
+                
+                <!-- Checkout do Carrinho -->
+                <div id="cart-checkout" class="p-5 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] hidden">
+                    <div class="flex justify-between items-center text-sm font-black text-slate-600 mb-3 bg-slate-100 p-2 rounded-lg">
+                        <span>ODD TOTAL MULTIPLICADA</span>
+                        <span id="cart-total-odds" class="text-slate-900 text-lg">1.00</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-sm font-bold text-slate-500">Valor da Aposta (Coins)</span>
+                        <div class="relative w-28">
+                            <i data-lucide="coins" class="w-4 h-4 text-amber-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="number" id="cart-amount" class="w-full text-right border-2 border-slate-200 focus:border-brand-500 rounded-xl py-2 pr-3 pl-8 font-bold text-slate-700 outline-none transition-colors" placeholder="0" oninput="updateCartPotential()">
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-sm font-bold text-slate-500">Ganhos Potenciais</span>
+                        <span class="text-2xl font-black text-emerald-500 flex items-center gap-1">
+                            <i data-lucide="arrow-up-circle" class="w-5 h-5"></i>
+                            <span id="cart-potential">0</span>
+                        </span>
+                    </div>
+                    
+                    <button onclick="placeCartBet()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-black py-4 rounded-xl shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] transition-all flex justify-center items-center gap-2">
+                        FAZER APOSTA AGORA <i data-lucide="check" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
 
+    </div>
+    
     <script src="script.js"></script>
 </body>
 </html>

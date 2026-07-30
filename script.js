@@ -10,12 +10,14 @@ if (SUPABASE_URL.startsWith('http')) {
 }
 
 const state = {
-    user: null, // Dados do auth.users e profiles
+    user: null,
+    profile: null,
     matches: [],
     bets: [],
-    selectedBetMatchId: null,
-    selectedBetWinner: null,
-    selectedAvatarFile: null
+    
+    // New Cart State
+    cart: [],
+    isCartOpen: false
 };
 
 const AVATARS = [
@@ -71,20 +73,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // (O onclick já está no HTML chamando nav())
 
     // Setup Modal Inputs
-    const amountInput = document.getElementById('bet-amount');
-    if (amountInput) {
-        amountInput.addEventListener('input', (e) => {
-            const val = parseInt(e.target.value) || 0;
-            const returnEl = document.getElementById('bet-return');
-            if (returnEl) returnEl.innerText = (val * 2).toLocaleString();
-            validateBetForm();
-        });
-    }
-
-    const confirmBtn = document.getElementById('btn-confirm-bet');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', confirmBet);
-    }
     
     // Listener do form de login
     const loginForm = document.getElementById('login-form');
@@ -126,11 +114,9 @@ async function loadUserProfile(authUser) {
     if (profile) {
         state.user = {
             id: authUser.id,
-            email: authUser.email,
-            name: profile.username,
-            balance: profile.coin_balance,
-            avatar_url: profile.avatar_url || localStorage.getItem(`avatar_${authUser.id}`)
+            email: authUser.email
         };
+        state.profile = profile;
         
         const loginSection = document.getElementById('login-section');
         const profileInfoSection = document.getElementById('profile-info-section');
@@ -299,14 +285,14 @@ async function giveLoginReward() {
     }
     
     // Atualiza saldo no Supabase
-    const newBalance = state.user.balance + 15;
+    const newBalance = state.profile.coin_balance + 15;
     const { error } = await supabaseClient
         .from('profiles')
         .update({ coin_balance: newBalance })
         .eq('id', state.user.id);
         
     if (!error) {
-        state.user.balance = newBalance;
+        state.profile.coin_balance = newBalance;
         updateUIBalances();
         
         localStorage.setItem(rewardKey, 'true'); // Marca que já recebeu
@@ -338,7 +324,7 @@ window.closeRewardModal = function() {
         rewardModal.classList.add('hidden');
         
         // Abre modal de avatar se usuário ainda não tiver foto
-        if (state.user && !state.user.avatar_url) {
+        if (state.user && !state.profile.avatar_url) {
             window.openAvatarModal();
         }
     }, 500);
@@ -347,7 +333,6 @@ window.closeRewardModal = function() {
 // ====================== AVATAR LOGIC ======================
 window.openAvatarModal = function() {
     if (!state.user) return;
-    state.selectedAvatarFile = null;
     
     const grid = document.getElementById('avatar-grid');
     grid.innerHTML = AVATARS.map((file, idx) => `
@@ -423,7 +408,7 @@ window.saveSelectedAvatar = async function() {
     // Salva também localmente por segurança (fallback)
     localStorage.setItem(`avatar_${state.user.id}`, avatarUrl);
     
-    state.user.avatar_url = avatarUrl;
+    state.profile.avatar_url = avatarUrl;
     updateUIAvatars();
     
     showToast("Foto de perfil atualizada!");
@@ -435,7 +420,7 @@ window.saveSelectedAvatar = async function() {
 function updateUIAvatars() {
     if (!state.user) return;
     
-    const url = state.user.avatar_url;
+    const url = state.profile.avatar_url;
     if (url) {
         const topbarImg = document.getElementById('topbar-avatar');
         const topbarIcon = document.getElementById('topbar-avatar-icon');
@@ -477,7 +462,7 @@ function nav(pageId) {
 
 // Atualizar Saldos na UI
 function updateUIBalances() {
-    const bal = state.user ? state.user.balance.toLocaleString() : '0';
+    const bal = state.profile ? state.profile.coin_balance.toLocaleString() : '0';
     document.getElementById('coin-balance').innerText = bal;
     document.getElementById('card-balance').innerText = bal;
     
@@ -654,7 +639,7 @@ function renderBetMatches() {
     lucide.createIcons();
 }
 
-// Lógica de Modal de Apostas
+// Lógica de Modal de Apostas (Mercados)
 window.openBetModal = function(matchId) {
     if (!state.user) {
         alert("Você precisa estar logado para apostar! Vá na aba 'Meu Perfil'.");
@@ -664,62 +649,63 @@ window.openBetModal = function(matchId) {
 
     const match = state.matches.find(m => m.id === matchId);
     if (!match) return;
-
-    state.selectedBetMatchId = matchId;
-    state.selectedBetWinner = null;
     
     document.getElementById('bet-modal-match-title').innerHTML = `<strong>${match.player1_name}</strong> vs <strong>${match.player2_name}</strong>`;
-    document.getElementById('bet-amount').value = '';
-    document.getElementById('bet-return').innerText = '0';
     
-    const playersContainer = document.getElementById('bet-modal-players');
-    playersContainer.innerHTML = `
-        <button onclick="selectWinner('${match.player1_name}')" id="btn-win-${match.player1_name}" class="player-select-btn p-4 border-2 border-slate-200 rounded-xl font-bold text-slate-700 hover:border-brand-500 hover:bg-brand-50 transition-all text-center">
-            ${match.player1_name}
-        </button>
-        <button onclick="selectWinner('${match.player2_name}')" id="btn-win-${match.player2_name}" class="player-select-btn p-4 border-2 border-slate-200 rounded-xl font-bold text-slate-700 hover:border-brand-500 hover:bg-brand-50 transition-all text-center">
-            ${match.player2_name}
-        </button>
-    `;
+    const marketsContainer = document.getElementById('bet-modal-markets');
+    
+    const markets = [
+        {
+            key: 'winner',
+            name: 'Vencedor da Partida',
+            options: [
+                { key: match.player1_name, name: match.player1_name, odd: 2.00 },
+                { key: match.player2_name, name: match.player2_name, odd: 2.00 }
+            ]
+        },
+        {
+            key: 'goals_2_5',
+            name: 'Total de Gols (Acima/Abaixo 2.5)',
+            options: [
+                { key: 'over', name: 'Mais de 2.5', odd: 1.80 },
+                { key: 'under', name: 'Menos de 2.5', odd: 1.80 }
+            ]
+        },
+        {
+            key: 'btts',
+            name: 'Ambas Equipes Marcam',
+            options: [
+                { key: 'yes', name: 'Sim', odd: 1.90 },
+                { key: 'no', name: 'Não', odd: 1.80 }
+            ]
+        }
+    ];
 
-    const modal = document.getElementById('bet-modal');
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        document.getElementById('bet-modal-content').classList.remove('scale-95');
-    }, 10);
-    validateBetForm();
+    let html = '';
+    markets.forEach(market => {
+        html += `
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="bg-slate-100 px-4 py-2 border-b border-slate-200 font-bold text-slate-700 text-sm">
+                    ${market.name}
+                </div>
+                <div class="p-3 grid grid-cols-2 gap-2">
+                    ${market.options.map(opt => `
+                        <button onclick="addToCart('${match.id}', '${match.player1_name} vs ${match.player2_name}', '${market.key}', '${market.name}', '${opt.key}', '${opt.name}', ${opt.odd})" class="flex flex-col items-center justify-center p-3 border-2 border-slate-100 rounded-lg hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                            <span class="text-sm font-bold text-slate-700">${opt.name}</span>
+                            <span class="text-brand-600 font-black mt-1">${opt.odd.toFixed(2)}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    marketsContainer.innerHTML = html;
+    document.getElementById('bet-modal').classList.remove('hidden');
+    document.getElementById('bet-modal').classList.add('flex');
 }
 
 window.closeBetModal = function() {
-    const modal = document.getElementById('bet-modal');
-    modal.classList.add('opacity-0');
-    document.getElementById('bet-modal-content').classList.add('scale-95');
-    setTimeout(() => { modal.classList.add('hidden'); }, 300);
-}
-
-window.selectWinner = function(playerName) {
-    state.selectedBetWinner = playerName;
-    document.querySelectorAll('.player-select-btn').forEach(btn => {
-        btn.classList.remove('border-brand-500', 'bg-brand-50', 'text-brand-700', 'ring-2', 'ring-brand-200');
-        btn.classList.add('border-slate-200', 'text-slate-700');
-    });
-    const selectedBtn = document.getElementById(`btn-win-${playerName}`);
-    if (selectedBtn) {
-        selectedBtn.classList.remove('border-slate-200', 'text-slate-700');
-        selectedBtn.classList.add('border-brand-500', 'bg-brand-50', 'text-brand-700', 'ring-2', 'ring-brand-200');
-    }
-    validateBetForm();
-}
-
-function validateBetForm() {
-    const amount = parseInt(document.getElementById('bet-amount').value) || 0;
-    const btn = document.getElementById('btn-confirm-bet');
-    
-    if (state.selectedBetWinner && amount > 0 && state.user && amount <= state.user.balance) {
-        btn.disabled = false;
-    } else {
-        btn.disabled = true;
     }
 }
 
